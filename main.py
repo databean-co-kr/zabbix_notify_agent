@@ -45,13 +45,15 @@ def debug():
 def changed_problem(p):
     # when closed
     if(p.closed == True):
-        send_text(p.message, tel_number, tel_country)
-        send_voice(p.message, tel_number, tel_country)
+        for tel_number in tel_numbers:
+            send_text(p.message, tel_number, tel_country)
+            send_voice(p.message, tel_number, tel_country)
         print("problem closed")
     # when opened
     else:
-        send_text(p.message, tel_number, tel_country)
-        send_voice(p.message, tel_number, tel_country)
+        for tel_number in tel_numbers:
+            send_text(p.message, tel_number, tel_country)
+            send_voice(p.message, tel_number, tel_country)
         print("problem opened")
 
     # save problems
@@ -152,8 +154,11 @@ def work():
 
 def main(args):
     while(True):
-        work()
-        time.sleep(5)
+        try:
+            work()
+            time.sleep(10)
+        except:
+            pass
 
 if __name__ == '__main__':
     import sys
@@ -173,7 +178,7 @@ if __name__ == '__main__':
     is_allow_voice = True
 
     # telephone
-    tel_number = "01049157829"
+    tel_numbers = ["xxx", "xxx", "xxx", "xxx"]
     tel_country = 82
 
     # authenticate to zabbix API
