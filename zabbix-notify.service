@@ -1,0 +1,13 @@
+[Unit]
+Description=Zabbix Notify
+After=multi-user.target
+
+[Service]
+User=gw
+Group=gw
+Type=idle
+WorkingDirectory=/home/gw/zabbix_notify_agent
+ExecStart=/usr/bin/python3 /home/gw/zabbix_notify_agent/main.py
+
+[Install]
+WantedBy=multi-user.target
