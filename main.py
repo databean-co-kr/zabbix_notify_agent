@@ -20,13 +20,15 @@ class Problem:
     def open(self, callback):
         self.closed = False
         self.openedDateTime = datetime.datetime.now()
-        self.message = "문제 발생: " + " / ".join([self.openedDateTime.strftime("%Y-%m-%d %H:%M:%S"), self.affiliate, self.hostname, self.name])
+        #self.message = "[Problem] " + " / ".join([self.openedDateTime.strftime("%Y-%m-%d %H:%M:%S"), self.affiliate, self.hostname, self.name])
+        self.message = "[Problem] " + " / ".join([self.hostname, self.affiliate, self.name])
         callback(self)
 
     def close(self, callback):
         self.closed = True
         self.closedDateTime = datetime.datetime.now()
-        self.message = "문제 해결: " + " / ".join([self.closedDateTime.strftime("%Y-%m-%d %H:%M:%S"), self.affiliate, self.hostname, self.name])
+        #self.message = "[OK] " + " / ".join([self.closedDateTime.strftime("%Y-%m-%d %H:%M:%S"), self.affiliate, self.hostname, self.name])
+        self.message = "[OK] " + " / ".join([self.hostname, self.affiliate, self.name])
         callback(self)
 
     def setChanged(self, changed):
@@ -43,17 +45,25 @@ def debug():
     log.setLevel(logging.DEBUG)
 
 def changed_problem(p):
+    # check allow notify
+    if(is_allow_notify == False):
+         print("Prevented to send notify")
+         return
+
     # when closed
     if(p.closed == True):
         for tel_number in tel_numbers:
             send_text(p.message, tel_number, tel_country)
-            send_voice(p.message, tel_number, tel_country)
+            if(p.severity > 4):
+                send_voice(p.message, tel_number, tel_country)
         print("problem closed")
+
     # when opened
     else:
         for tel_number in tel_numbers:
             send_text(p.message, tel_number, tel_country)
-            send_voice(p.message, tel_number, tel_country)
+            if(p.severity > 4):
+                send_voice(p.message, tel_number, tel_country)
         print("problem opened")
 
     # save problems
@@ -71,8 +81,9 @@ def send_text(message, to, country):
        "country": country
     }
     headers = {"Content-Type": "application/json; charset=utf8"}
-    res = requests.post("http://gw.local/?route=api.twilio", headers=headers, data=json.dumps(data))
+    res = requests.post("http://10.125.31.183/~gw/?route=api.twilio", headers=headers, data=json.dumps(data))
     print(res.content)
+    print("Sent. " + message)
     return res
 
 def send_voice(message, to, country):
@@ -87,8 +98,9 @@ def send_voice(message, to, country):
        "country": country
     }
     headers = {"Content-Type": "application/json; charset=utf8"}
-    res = requests.post("http://gw.local/?route=api.twilio", headers=headers, data=json.dumps(data))
+    res = requests.post("http://10.125.31.183/~gw/?route=api.twilio", headers=headers, data=json.dumps(data))
     print(res.content)
+    print("Sent. " + message)
     return res
 
 def get_affiliate(p):
@@ -96,7 +108,7 @@ def get_affiliate(p):
 
 def save_problems():
     try:
-        with open("problems.json", "wb") as f:
+        with open("/tmp/problems.pickle", "wb") as f:
             pickle.dump(problems, f)
     except:
         print("Could not load current problems")
@@ -105,10 +117,11 @@ def load_problems():
     problems = []
 
     try:
-        with open("problems.json", "rb") as f:
+        with open("/tmp/problems.pickle", "rb") as f:
             problems = pickle.load(f)
     except:
         print("Colud not load previous problems")
+        problems = None
 
     return problems
 
@@ -156,7 +169,9 @@ def main(args):
     while(True):
         try:
             work()
-            time.sleep(10)
+            time.sleep(45)
+        except KeyboardInterrupt:
+            raise
         except:
             pass
 
@@ -170,21 +185,30 @@ if __name__ == '__main__':
     import requests
     import json
 
+    # authenticate to zabbix API
+    zapi = ZabbixAPI("http://10.125.31.181/zabbix")
+    zapi.login("Admin", "zabbix")
+    print("Connected to Zabbix API Version %s" % zapi.api_version())
+
+    # allow notify
+    is_allow_notify = False
+
     # problem list
     problems = load_problems()
+    while(problems is None):
+        problems = []
+        get_next_problems()
+        save_problems()
+        problems = load_problems()
 
     # allow text/voice
     is_allow_text = True
     is_allow_voice = True
+    is_allow_notify = True
 
     # telephone
-    tel_numbers = ["xxx", "xxx", "xxx", "xxx"]
+    tel_numbers = ["1038967829"]
     tel_country = 82
-
-    # authenticate to zabbix API
-    zapi = ZabbixAPI("http://zbx.local/zabbix")
-    zapi.login("Admin", "zabbix")
-    print("Connected to Zabbix API Version %s" % zapi.api_version())
 
     #debug()
     sys.exit(main(sys.argv))
