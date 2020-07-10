@@ -53,7 +53,8 @@ def changed_problem(p):
     # when closed
     if(p.closed == True):
         for tel_number in tel_numbers:
-            send_text(p.message, tel_number, tel_country)
+            if(p.severity > 1):
+                send_text(p.message, tel_number, tel_country)
             if(p.severity > 4):
                 send_voice(p.message, tel_number, tel_country)
         print("problem closed")
@@ -61,7 +62,8 @@ def changed_problem(p):
     # when opened
     else:
         for tel_number in tel_numbers:
-            send_text(p.message, tel_number, tel_country)
+            if(p.severity > 1):
+                send_text(p.message, tel_number, tel_country)
             if(p.severity > 4):
                 send_voice(p.message, tel_number, tel_country)
         print("problem opened")
